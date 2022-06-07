@@ -1,0 +1,91 @@
+---
+title: "Parte 2 - ggplot2"
+author: "Fabrício Dalvi Venturim"
+date: "12/05/2022"
+output:
+  html_document:
+    number_sections: yes
+    highlight: tango
+    theme: cerulean
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smmoth_scroll: no
+  pdf_document:
+    toc: yes
+---
+Bibliotecas para o markdown:
+
+```{r message=FALSE, warning=FALSE}
+library("knitr")
+library("kableExtra")
+library("htmltools")
+```
+
+O banco de dados utilizados na parte 1 do trabalho foi:
+
+```{r}
+dados_originais = read.csv("campeonato-brasileiro-full.csv")
+```
+
+Para facilitar o desenvolvimento da marca gráfico, preferi limpar esses dados para o que necessito.
+
+# Limpeza de dados
+
+Primeiramente, vamos excluir as colunas que não desejamos:
+
+```{r}
+excluir <- c("dia", "hora", "formacao_mandante", "formacao_visitante", "tecnico_mandante", "tecnico_visitante", "arena","mandante_estado","visitante_estado","estado_vencedor")
+dados <- dados_originais[,!(names(dados_originais)%in% excluir)]
+head(dados)
+```
+
+Além disso, os jogos a partir de 08/12/2019 (última rodada da temporada 2019) foram sem a torcida. A partir de 05/10/2021 houve uma transição para a volta da torcida. Entretanto, como essa transição ocorreu de modo tímido e com poucos times, decidi considerar os dados até tal data. 
+
+```{r}
+dados = dados[dados[["data"]] <= "2021-10-04", ]
+```
+
+Com os dados limpados, vamos agrupá-los por time mandante, temporada e o vencedor:
+
+```{r}
+if(!require(ggplot2)) install.packages("ggplot2")
+library(ggplot2)
+
+if(!require(dplyr)) install.packages("dplyr")
+library(dplyr)
+```
+
+
+```{r}
+tabela <- dados %>% 
+  group_by(mandante, Temporada, vencedor) %>% 
+  summarize (N = n()) %>% 
+  mutate(freq = N / sum(N), pct = round((freq*100),0))
+```
+
+Após fazer isso, eu salvei essa tabela na pasta de trabalho com o comando `write.table(tabela, file = "tabela.csv", sep = ",")` e arrumei ela no excel para ficar da seguinte forma:
+
+```{r}
+dados_mandantes = read.csv("futebol.csv")
+```
+
+# Começo
+
+
+```{r}
+tabela_estatistica <- dados_mandantes %>% group_by(temporada) %>%
+  summarize(aproveitamento_mean = mean(aproveitamento, na.rm = TRUE))
+```
+
+```{r}
+graf <- ggplot(data = tabela_estatistica, mapping = aes(x = temporada, aproveitamento_mean))
+graf + geom_col() + ylim(0, 1)
+```
+
+
+
+
+
+
+

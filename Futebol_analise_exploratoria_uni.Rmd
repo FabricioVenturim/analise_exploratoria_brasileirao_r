@@ -1,0 +1,114 @@
+---
+title: "Parte 1 - ggplot2"
+author: "Fabrício Dalvi Venturim"
+date: "12/05/2022"
+output:
+  html_document:
+    number_sections: yes
+    highlight: tango
+    theme: cerulean
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smmoth_scroll: no
+  pdf_document:
+    toc: yes
+---
+Bibliotecas para o markdown:
+
+```{r message=FALSE, warning=FALSE}
+library("knitr")
+library("kableExtra")
+library("htmltools")
+```
+
+```{r}
+if(!require(ggplot2)) install.packages("ggplot2")
+library(ggplot2)
+
+if(!require(dplyr)) install.packages("dplyr")
+library(dplyr)
+```
+O banco de dados utilizados na parte 1 do trabalho foi:
+
+https://github.com/adaoduque/Brasileirao_Dataset
+
+```{r}
+dados = read.csv("campeonato-brasileiro-full.csv")
+```
+
+# Curiosidade e propósito
+
+Assim como no Case Sudy do Capítulo 3 do livro do Andy Kirk, sempre fui fanático por futebol e toda a estatística que busca explicar esse esporte. Nos dias de hoje, o que mais se ouve nas televisões, sites e vídeos são estatísticas e informações sobre o mundo do futebol e suas peculiaridades.
+
+Por conta disso, resolvi pegar um banco de dados sobre o campeonato brasileiro, a fim de realizar algumas análises e tirar conclusões. 
+
+## Estudar as variáveis do banco de dados
+
+Uma boa forma de iniciar uma análise exploratória de dados é entender e classificar os tipos de variáveis do banco de dados.
+
+Vamos ver o banco de dados:
+
+```{r}
+str(dados)
+```
+```{r}
+head(dados)
+```
+
+```{r}
+tail(dados)
+```
+
+Temos que a classificação das variáveis é a seguinte:
+
+* Qualitativas:
+  + `dia`, `mandante`, `visitante`, `vencedor`, `arena`, `mandante_estado`, `visitante_estado`, `estado_vencedor`.
+
+* Quantitativas
+  + `rodada`, `temporada`, `hora`, `data`, `mandante_placar`, `visitante_placar`.
+
+Agora que classificamos as variáveis, vamos fazer algumas **análises univariada**.
+
+## Análise univariada
+
+Como eu peguei esta base da internet, certas variáveis(colunas) não me interessam muito a princípio. Portanto, vou trabalhar com as mais importante, e, caso necessário, utilizo as demais.
+
+### Variável Qualitativa
+
+Com as variáveis `vencedor`, `arena`, `estado_vencedor`podemos obter, a princípio, uma tabela de frequência:
+
+```{r}
+vencedor.tb <- table(dados$vencedor)
+vencedor.tb <- sort(vencedor.tb, decreasing = TRUE)
+vencedor.tb
+```
+
+Porcentagem:
+
+```{r}
+vencedor.tb/length(dados$vencedor) * 100
+```
+
+
+Vamos plotar um gráfico para ter essas informaçoes visualmente:
+
+```{r}
+
+                          #Deixa os times nos eixos em vertical
+barplot(vencedor.tb,las = 2, cex.names = 1)
+pie(vencedor.tb)
+```
+
+Percebe-se que não ficou muito legal de visualizar por conta da quantidade de times. Então, vamos ver apenas os times com mais vitórias.
+
+```{r}
+                          #Deixa os times nos eixos em vertical
+barplot(head(vencedor.tb), las = 2, cex.names = 1)
+pie(head(vencedor.tb))
+
+```
+
+**Percebe-se que, desconsiderando a quantidade de empates (-), os times que mais venceram foram o São Paulo(338), Flamengo(317), Santos(317), Internacional(304) e Corinthians(296).*
+
+*Além disso, de 2003 até 2021, houveram 2015 empates, o que, considerando que tiveram 7645 jogos, representa  26,35% dos resultados dos jogos.**
