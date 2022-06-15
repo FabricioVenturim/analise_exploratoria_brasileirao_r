@@ -1,7 +1,7 @@
 ---
 title: "Parte 2 - ggplot2"
-author: "Fabrício Dalvi Venturim"
-date: "12/05/2022"
+author: "Fabrício Dalvi Venturim e Luis Felipe Marques"
+date: "15/05/2022"
 output:
   html_document:
     number_sections: yes
@@ -22,7 +22,7 @@ library("kableExtra")
 library("htmltools")
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 if(!require(ggplot2)) install.packages("ggplot2")
 library(ggplot2)
 
@@ -35,16 +35,23 @@ library(ggthemes)
 
 O banco de dados utilizados na parte 1 do trabalho foi:
 
-```{r}
+https://github.com/adaoduque/Brasileirao_Dataset
+
+```{r message=FALSE, warning=FALSE}
 dados <- read.csv("campeonato-brasileiro-full.csv")
 ```
 
-# Limpeza
+# Objetivo: O 12º homem em campo: eles fazem a diferença ou são apenas parte da decoração?
 
+Algo muito comum de ouvir no futebol é "A torcida é o 12ª jogador do time". De fato, ao olhar para a análises da parte 1 do trabalho, é notório que o desempenho dos times jogando em casa é superior ao desempenho dos times jogando fora de casa. 
+
+No entanto,muitos fatores podem influenciar isso.Porém, nas temporadas de 2020 e 2021 do brasileirão, por conta da pandemia, não houve a presença da torcida nos estádios. Nesse momento houve um estalo entre nós: será que de fato a torcida influencia no desempenho do time? e é sobre isso que iremos descobrir agora.
+
+# Limpeza
 
 Primeiramente, vamos excluir as colunas que não desejamos:
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 excluir <- c("dia", "hora", "formacao_mandante", "formacao_visitante",
              "tecnico_mandante", "tecnico_visitante",
              "arena","visitante_estado","estado_vencedor")
@@ -54,15 +61,15 @@ head(dados)
 
 Além disso, os jogos a partir de 08/12/2019 (última rodada da temporada 2019) foram sem a torcida. A partir de 05/10/2021 houve uma transição para a volta da torcida. Entretanto, como essa transição ocorreu de modo tímido e com poucos times, decidimos considerar os dados até tal data. 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 dados = dados[dados[["data"]] <= "2021-10-04", ]
 ```
 
-# Começo
+# Criando os gráficos
 
 Para criar uma tabela dos aproveitamentos de cada time, primeiro associamos novas variáveis times aos nossos dados. 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 if(!require(tidyr)) install.packages("tidyr")
 library(tidyr)
 
@@ -112,7 +119,7 @@ times <- times %>%
 
 Por fim, podemos criar o gráfico do desempenho em casa e fora de casa em cada temporada
 
-```{r width=1800, height=300}
+```{r message=FALSE, warning=FALSE}
 d1 <- times %>% group_by(Temporada) %>% summarize(aprov_fora_md = mean(aprov_fora))
 d2 <- times %>% group_by(Temporada) %>% summarize(aprov_casa_md = mean(aprov_casa))
 cor <- c("#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff0000", "#ff0000")
@@ -128,13 +135,13 @@ grafico
 
 Vamos salvar o gráfico:
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 ggsave("aproveitamento.png", grafico)
 ```
 
 A seguir, criamos bases de dados que mostrar os aproveitamentos dos times. Esses dados foram divididos em duas bases, pré (2003-2019) e pós (2020-2021). A seguir, é tirada a média desses dados, e esses números são organizados num stacked bar com valores nagativos.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 dados_pre <- dados[dados[["data"]] <= "2020-01-01", ]
 dados_pos <- dados[dados[["data"]] >= "2020-01-01", ]
 
@@ -208,6 +215,33 @@ grafico <- ggplot(dadao, aes(x=cate, y=x)) +
 grafico
 ```
 
-```{r}
+Vamos salvar esse gráfico também
+
+```{r message=FALSE, warning=FALSE}
 ggsave("aproveitamento_geral.png", grafico, width = 21 )
 ```
+
+# Criando a marca gráfica
+
+Após desenvolver os dois gráficos, vamos, utilizando o site canva, juntar essas duas partes e criar a marca gráfica dos gráficos. 
+
+Para a escolha das cores dos gráficos, decidimos remeter a duas cores consideradas opostas: o vermelho para representar os dados do time visitante e o azul para representar os dados do time mandante. Além disso, com o apoio da atividade de cores "transparentes", escolhemos outras duas cores que passam esse efeito, a fim de destacar as temporadas sem a presença dos torcedores. De cor de fundo, usaremos um cor neutra para destacar os gráficos. 
+
+A anotação mais importante foi colocar os valores das porcentagens nos gráficos, pois, apesar da visualização das barras ajudar entender a diferença, poder visualizar os números em texto é de extrema importância.
+
+Além disso, apesar de ser possível editar os eixos e os títulos no próprio R, não foi possível colocar nossa fonte de letra, e, por conta disso, decidimos reescrever os eixos e os títulos no próprio editor de imagem, levando em conta o horiginal. 
+
+Por fim, aplicando o que foi ensinado no curso, o resultado final foi:
+
+![marca gráfica](marca_grafica.png).
+
+# Conclusão
+
+Portanto, Os torcedores que vão aos jogos são parte fundamental do esporte, desde a energia que eles trazem até o dinheiro que eles gastam.
+
+A falta da torcida afetou bastante o resultado dos jogos, visto que o aproveitamento dos times mandantes diminuio em relação às temporadas com torcida e o aproveitamento dos times visitantes melhorou sem a torcida rival.
+
+Outra coisa interessante, ao pesquisar mais sobre o tema, é que o apoio da torcida e a responsabilidade extra de jogar na frente de uma multidão apaixonada podem elevar o desempenho de um jogador. "Essa energia te ajuda a dar 5 ou 10% a mais de você, e isso, você não consegue durante um treinamento", diz Martin, um jogador de futebol.
+
+O futebol perde boa parte de sua beleza sem a presença das torcidas nos estádios. Os torcedores vivem sensações únicas em dias de jogo. Esses sentimentos são extremamente aflorados com toda a mística que é estar presente em uma partida de futebol.
+
