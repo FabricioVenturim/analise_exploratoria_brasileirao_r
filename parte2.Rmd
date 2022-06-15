@@ -36,7 +36,7 @@ library(ggthemes)
 O banco de dados utilizados na parte 1 do trabalho foi:
 
 ```{r}
-dados = read.csv("campeonato-brasileiro-full.csv")
+dados <- read.csv("campeonato-brasileiro-full.csv")
 ```
 
 # Limpeza
@@ -112,13 +112,102 @@ times <- times %>%
 
 Por fim, podemos criar o gráfico do desempenho em casa e fora de casa em cada temporada
 
-```{r}
+```{r width=1800, height=300}
 d1 <- times %>% group_by(Temporada) %>% summarize(aprov_fora_md = mean(aprov_fora))
 d2 <- times %>% group_by(Temporada) %>% summarize(aprov_casa_md = mean(aprov_casa))
-
+cor <- c("#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff8282", "#ff0000", "#ff0000")
+cor2 <- c("#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#89a2ff", "#001eff", "#001eff")
 d <- merge(x = d2, y = d1)
-ggplot(d, aes(x = Temporada)) + 
-  geom_line(aes(y = aprov_casa_md), color = "blue", size=1.3) +
-  geom_line(aes(y = aprov_fora_md), color = "red", size=1.3) + ylim(0, 70)
+grafico <- ggplot(d, aes(x = Temporada, y = 100)) + 
+  geom_col(aes(y = 100), fill = cor, width=0.98) + 
+  geom_col(aes(y = 100 - aprov_fora_md), fill = "white", width=0.98) + 
+  geom_col(aes(y=aprov_casa_md), fill = cor2, width=0.98) +
+  theme_void()
+grafico
 ```
 
+Vamos salvar o gráfico:
+
+```{r}
+ggsave("aproveitamento.png", grafico)
+```
+
+A seguir, criamos bases de dados que mostrar os aproveitamentos dos times. Esses dados foram divididos em duas bases, pré (2003-2019) e pós (2020-2021). A seguir, é tirada a média desses dados, e esses números são organizados num stacked bar com valores nagativos.
+
+```{r}
+dados_pre <- dados[dados[["data"]] <= "2020-01-01", ]
+dados_pos <- dados[dados[["data"]] >= "2020-01-01", ]
+
+times_pre <- count(dados_pre, time_mandante, Temporada, mandante_estado)
+names(times_pre)[1] <- "time"
+names(times_pre)[3] <- "estado"
+names(times_pre)[4] <- "jogos_em_casa"
+times_2 <- count(dados_pre, time_visitante)
+names(times_2)[1] <- "time"
+names(times_2)[2] <- "jogos_fora"
+
+times_pre <- merge(x = times_pre, y = times_2, by = "time", all.x = TRUE)
+
+pts_casa <- aggregate(pts_mandante ~ time_mandante, data = dados_pre, FUN=sum)
+names(pts_casa)[1] <- "time"
+pts_fora <- aggregate(pts_visitante ~ time_visitante, data = dados_pre, FUN=sum)
+names(pts_fora)[1] <- "time"
+
+times_pre <- merge(x = times_pre, y = pts_casa, by = "time", all.x = TRUE)
+times_pre <- merge(x = times_pre, y = pts_fora, by = "time", all.x = TRUE)
+times_pre <- times_pre %>%
+  mutate(aprov_casa = pts_mandante/(3*jogos_em_casa)*100) %>%
+  mutate(aprov_fora = pts_visitante/(3*jogos_fora)*100) %>%
+  mutate(pts_tot = pts_mandante+pts_visitante) %>%
+  mutate(aprov_tot = pts_tot/(3*(jogos_em_casa+jogos_fora))*100)
+
+times_pos <- count(dados_pos, time_mandante, Temporada, mandante_estado)
+names(times_pos)[1] <- "time"
+names(times_pos)[3] <- "estado"
+names(times_pos)[4] <- "jogos_em_casa"
+times_2 <- count(dados_pos, time_visitante)
+names(times_2)[1] <- "time"
+names(times_2)[2] <- "jogos_fora"
+
+times_pos <- merge(x = times_pos, y = times_2, by = "time", all.x = TRUE)
+
+pts_casa <- aggregate(pts_mandante ~ time_mandante, data = dados_pos, FUN=sum)
+names(pts_casa)[1] <- "time"
+pts_fora <- aggregate(pts_visitante ~ time_visitante, data = dados_pos, FUN=sum)
+names(pts_fora)[1] <- "time"
+
+times_pos <- merge(x = times_pos, y = pts_casa, by = "time", all.x = TRUE)
+times_pos <- merge(x = times_pos, y = pts_fora, by = "time", all.x = TRUE)
+times_pos <- times_pos %>%
+  mutate(aprov_casa = pts_mandante/(3*jogos_em_casa)*100) %>%
+  mutate(aprov_fora = pts_visitante/(3*jogos_fora)*100) %>%
+  mutate(pts_tot = pts_mandante+pts_visitante) %>%
+  mutate(aprov_tot = pts_tot/(3*(jogos_em_casa+jogos_fora))*100)
+
+times_pre <- times_pre %>%
+  mutate(g = 1)
+times_pos <- times_pos %>%
+  mutate(g = 1)
+pre_casa <- aggregate(times_pre$aprov_casa, by = list(times_pre$g), FUN = mean)$x[1]
+pos_casa <- aggregate(times_pos$aprov_casa, by = list(times_pos$g), FUN = mean)$x[1]
+pre_fora <- -aggregate(times_pre$aprov_fora, by = list(times_pre$g), FUN = mean)$x[1]
+pos_fora <- -aggregate(times_pos$aprov_fora, by = list(times_pos$g), FUN = mean)$x[1]
+dadao <- data.frame(
+  cate = factor(c(2,1,2,1)),
+  x = c(pre_casa, pos_casa, pre_fora, pos_fora)
+)
+grafico <- ggplot(dadao, aes(x=cate, y=x)) + 
+  geom_bar(width = 0.6, 
+           stat="identity", 
+           position = position_stack(), 
+           color="white", 
+           fill = c("#001eff","#001eff","#ff0000","#ff0000"))+
+  coord_flip() +
+  theme_void()
+
+grafico
+```
+
+```{r}
+ggsave("aproveitamento_geral.png", grafico, width = 21 )
+```
